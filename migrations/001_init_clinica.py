@@ -15,9 +15,9 @@ load_dotenv()
 MONGO_URI = os.getenv("MONGODB_URI")
 if not MONGO_URI:
     raise RuntimeError(
-        "Error: Variable de entorno 'MONGODB_URI' no está definida.\n"
-        "   - Crea un archivo .env con MONGODB_URI=...\n"
-        "   - O configúrala en GitHub Secrets / servidor"
+        "Error: Environment variable 'MONGODB_URI' is not set.\n"
+        "   - Create a '.env' file with 'MONGODB_URI=...'\n"
+        "   - Or configure it in Github Secrets / Server"
     )
 
 DB_NAME = os.getenv("MONGODB_DB", "Clinica")

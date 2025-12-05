@@ -79,22 +79,25 @@
         '';
 
         shellHook = ''
-          # Carga .env automáticamente. Pyuthon se encarga de cargarlo automáticamente, pero no pasa nada por tener esto duplicado
+          # Load the .env file (if supplied)
+          # Things of note:
+          # As it can be see, FLASK_APP and FLASK_ENV vars will be (over)set here.
+          # the python app (application.py) will try to load the .env itself as well
           [ -f .env ] && export $(grep -v '^#' .env | xargs)
 
           export FLASK_APP=application.py
           export FLASK_ENV=development
 
           echo ""
-          echo "Flask API Citas - Entorno de desarrollo listo"
+          echo "Flask API Citas - Development Environment"
           echo "Python: ${python.version}"
           echo "Entorno virtual: $venvDir"
           echo ""
-          echo "Comandos útiles:"
-          echo "  flask run                    -> iniciar servidor"
-          echo "  python ./migrations/001_init_clinica.py -> ejecutar migración"
-          echo "  pytest -v                    -> ejecutar tests"
-          echo "  black . && ruff check .      -> formatear y lint"
+          echo "Useful commands:"
+          echo "  flask run                    -> Start flask server"
+          echo "  python ./migrations/001_init_clinica.py -> Populate database"
+          echo "  pytest -v                    -> Run tests"
+          echo "  black . && ruff check .      -> Format and Lint"
           echo ""
         '';
       };
