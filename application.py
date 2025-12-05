@@ -18,14 +18,30 @@ import bcrypt
 
 from flask_cors import CORS
 
+# Tries to load a file called .env from the same directory as the .py file is in
+from dotenv import load_dotenv
+load_dotenv()
 
 app = Flask(__name__)
-
 CORS(app)
 
-app.config["JWT_SECRET_KEY"] = "misuperclavedeldestinofinal"
+# === REQUIRED ENVIRONMENT VARIABLES ===
+# These will come from:
+#   - .env (local)
+#   - GitHub Secrets (CI/CD)
+#   - etc.
 
+MONGODB_URI = os.getenv("MONGODB_URI")
+if not MONGODB_URI:
+    raise RuntimeError("MONGODB_URI is not set! Create a .env file or configure it in your environment.")
+
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+if not JWT_SECRET_KEY:
+    raise RuntimeError("JWT_SECRET_KEY is not set! Add it to .env or GitHub Secrets.")
+
+app.config["JWT_SECRET_KEY"] = JWT_SECRET_KEY
 jwt = JWTManager(app)
+
 swagger = Swagger(app, template={
     "swagger": "2.0",
     "info": {
@@ -44,8 +60,14 @@ swagger = Swagger(app, template={
     "security": [{"Bearer": []}]
 })
 
-mongo_uri = os.environ.get("MONGODB_URI", "mongodb://localhost:27017/")
-myclient = pymongo.MongoClient(mongo_uri)
+myclient = pymongo.MongoClient(MONGODB_URI)
+
+try:
+    myclient.admin.command('ping')
+    print("Connected to MongoDB successfully!")
+except Exception as e:
+    print("Unable to connect to MongoDB:", e)
+    raise
 
 
 @app.route('/', methods=['GET'])

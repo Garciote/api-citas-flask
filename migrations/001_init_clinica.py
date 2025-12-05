@@ -1,69 +1,75 @@
-"""Script de migración inicial para la base de datos Clinica.
-
-Crea las colecciones necesarias y añade índices y datos de ejemplo
-para que la API pueda funcionar desde el primer arranque.
+#!/usr/bin/env python3
 """
-import os
-from typing import Iterable
+Script de migración inicial para la base de datos Clinica.
+Crea colecciones, índices únicos y datos de ejemplo (centros).
+Totalmente compatible con MongoDB Atlas y variables de entorno.
+"""
 
+import os
+from dotenv import load_dotenv
 import pymongo
 
+load_dotenv()
 
-MONGO_URI = os.environ.get("MONGODB_URI", "mongodb://localhost:27017/")
-DB_NAME = os.environ.get("MONGODB_DB", "Clinica")
+# Obligatorio: usar MONGODB_URI desde entorno
+MONGO_URI = os.getenv("MONGODB_URI")
+if not MONGO_URI:
+    raise RuntimeError(
+        "Error: Variable de entorno 'MONGODB_URI' no está definida.\n"
+        "   - Crea un archivo .env con MONGODB_URI=...\n"
+        "   - O configúrala en GitHub Secrets / servidor"
+    )
 
+DB_NAME = os.getenv("MONGODB_DB", "Clinica")
 
-def ensure_collections(db: pymongo.database.Database, names: Iterable[str]) -> None:
-    """Crea las colecciones listadas si no existen todavía."""
+def ensure_collections(db, names):
     existing = set(db.list_collection_names())
     for name in names:
         if name not in existing:
             db.create_collection(name)
+            print(f"  Colección creada: {name}")
 
-
-def ensure_indexes(db: pymongo.database.Database) -> None:
-    """Configura índices básicos para las colecciones principales."""
+def ensure_indexes(db):
+    print("  Creando índices únicos...")
     db["usuarios"].create_index("username", unique=True)
     db["citas"].create_index(
         [("day", pymongo.ASCENDING), ("hour", pymongo.ASCENDING), ("center", pymongo.ASCENDING)],
         unique=True,
-        name="unique_date_per_center",
+        name="unique_date_per_center"
     )
 
-
-def seed_centers(db: pymongo.database.Database) -> None:
-    """Inserta centros por defecto si la colección está vacía."""
-    if db["centros"].count_documents({}) > 0:
-        return
-
-    db["centros"].insert_many(
-        [
+def seed_centers(db):
+    if db["centros"].count_documents({}) == 0:
+        print("  Insertando centros por defecto...")
+        db["centros"].insert_many([
             {
                 "name": "Centro de Salud Madrid Norte",
-                "address": "Calle de la Salud, 123, Madrid",
+                "address": "Calle de la Salud, 123, Madrid"
             },
             {
                 "name": "Centro Médico Madrid Sur",
-                "address": "Avenida de la Medicina, 456, Madrid",
-            },
-        ]
-    )
+                "address": "Avenida de la Medicina, 456, Madrid"
+            }
+        ])
+    else:
+        print("  Los centros ya existen, saltando seed")
 
-
-def main() -> None:
+def main():
+    print(f"Conectando a MongoDB...")
     client = pymongo.MongoClient(MONGO_URI)
     db = client[DB_NAME]
+
+    # Test conexión
+    client.admin.command('ping')
+    print(f"Conexión exitosa a la base de datos: {DB_NAME}")
 
     ensure_collections(db, ["usuarios", "centros", "citas"])
     ensure_indexes(db)
     seed_centers(db)
 
-    print(
-        "Migración completada. Base de datos '{db}' en '{uri}' lista para usarse.".format(
-            db=DB_NAME, uri=MONGO_URI
-        )
-    )
-
+    print(f"\n¡Migración completada con éxito!")
+    print(f"   Base de datos: {DB_NAME}")
+    print(f"   URI: {MONGO_URI.split('@')[-1] if '@' in MONGO_URI else MONGO_URI}")
 
 if __name__ == "__main__":
     main()

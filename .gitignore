@@ -4,3 +4,7 @@
 ./__pycache__/*
 ./.vscode/
 ./.vscode/*
+__pycache__
+.venv
+.env
+.private
