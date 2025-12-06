@@ -62,6 +62,7 @@
           python.pkgs.black
           python.pkgs.ruff
           python.pkgs.flask-migrate
+          python.pkgs.mongomock
         ];
 
         # Automatically set up the venv with exact requirements on first entry
