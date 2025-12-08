@@ -23,20 +23,27 @@ def mock_mongo(monkeypatch):
 
     # Monkey-patch global so 'from application import myclient' gets mocked.
     monkeypatch.setattr("application.myclient", mock_client)
+    monkeypatch.setattr("pymongo.database.Database", mock_client.__getattr__)  # Added since the ping issue
 
     # Also patch pymongo.MongoClient to point to the mock client.
     monkeypatch.setattr("pymongo.MongoClient", lambda *args, **kwargs: mock_client)
 
-    # Execute the migration script on the mocked client.
-    #...This works with any other changes because of the previous patches
-    os.environ["MONGODB_URI"] = "mongodb://127.0.0.1:27017/Clinica_test"
-    os.environ["MONGODB_DB"] = "Clinica_test"
+    # Path the global myclient made in application.py
+    import application
+    monkeypatch.setattr(application, "myclient", mock_client)
+
+    # Patch the ping test done in application
+    def fake_ping(*args, **kwargs):
+        return {"ok": 1.0}
+    monkeypatch.setattr(mock_client.admin, "command", fake_ping)
+
+    # Then just do the migration
+    from migrations._001_init_clinica import main as run_migration
+    os.environ["MONGODB_URI"] = "mongodb://mock"
+    os.environ["MONGODB_DB"] = "Clinica"
     run_migration()
 
     yield mock_client
-
-    # The mock object stops existing once we are out of the tests, but we do this just in case.
-    mock_client.drop_database("Clinica_test")
 
 # ------------------------------------------------------------------
 # Setup the client
