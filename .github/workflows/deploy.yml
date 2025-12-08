@@ -27,7 +27,6 @@ jobs:
       - name: Run tests with mongomock
         env:
           JWT_SECRET_KEY: super-secret-test-key-12345
-          MONGODB_URI: mongodb://127.0.0.1:27017/
         run: |
           pytest -v tests/test_api.py
           echo "Tests passed!"
