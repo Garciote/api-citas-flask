@@ -29,7 +29,7 @@ def mock_mongo(monkeypatch):
 
     # Execute the migration script on the mocked client.
     #...This works with any other changes because of the previous patches
-    os.environ["MONGODB_URI"] = "mongodb://localhost:27017/Clinica_test"
+    os.environ["MONGODB_URI"] = "mongodb://127.0.0.1:27017/Clinica_test"
     os.environ["MONGODB_DB"] = "Clinica_test"
     run_migration()
 
