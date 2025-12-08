@@ -1,0 +1,55 @@
+# .github/workflows/deploy.yml
+name: Deploy to Server
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  test-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pytest mongomock python-dotenv
+
+      - name: Run mongomock tests
+        env:
+          MONGODB_URI: mongodb://fake
+          JWT_SECRET_KEY: test-secret
+        run: |
+          pytest -v tests/test_api.py
+
+      # === SSH & Deploy ===
+      # https://github.com/shimataro/ssh-key-action
+      - name: Install SSH key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          known_hosts: ${{ secrets.SSH_HOST }}
+          if_key_exists: replace
+
+      - name: Add server to known_hosts
+        run: |
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Create remote deploy directory if it doesn't exist
+        run: |
+          ssh ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} \
+            "mkdir -p ${{ secrets.SSH_DEPLOY_PATH }} && chmod 755 ${{ secrets.SSH_DEPLOY_PATH }}"
+
+      - name: Deploy with rsync over SSH
+        run: |
+          rsync -avz --delete \
+            dist/ \
+            ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:${{ secrets.SSH_DEPLOY_PATH }}

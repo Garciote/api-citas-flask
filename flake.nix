@@ -53,6 +53,7 @@
           python
           python.pkgs.venvShellHook # automatically creates & activates venv
           python.pkgs.pip
+          putty
         ];
 
         buildInputs = with pkgs; [
