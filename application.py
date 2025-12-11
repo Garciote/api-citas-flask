@@ -32,10 +32,10 @@ CORS(app)
 #   - etc.
 
 MONGODB_URI = os.getenv("MONGODB_URI")
-#if not MONGODB_URI:
-#    raise RuntimeError("Error: Environment variable 'MONGODB_URI' is not set.\n"
-#        "   - Create a '.env' file with 'MONGODB_URI=...'\n"
-#        "   - Or configure it in Github Secrets / Server")
+if not MONGODB_URI:
+    raise RuntimeError("Error: Environment variable 'MONGODB_URI' is not set.\n"
+        "   - Create a '.env' file with 'MONGODB_URI=...'\n"
+        "   - Or configure it in Github Secrets / Server")
 
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 if not JWT_SECRET_KEY:
@@ -64,12 +64,12 @@ swagger = Swagger(app, template={
 
 myclient = pymongo.MongoClient(MONGODB_URI)
 
-try:
-    myclient.admin.command('ping')
-    print("Connected to MongoDB successfully!")
-except Exception as e:
-    print("Unable to connect to MongoDB:", e)
-    raise
+#try:
+#    myclient.admin.command('ping')
+#    print("Connected to MongoDB successfully!")
+#except Exception as e:
+#    print("Unable to connect to MongoDB:", e)
+#    raise
 
 
 @app.route('/', methods=['GET'])
