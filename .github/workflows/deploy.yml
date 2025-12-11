@@ -72,7 +72,7 @@ jobs:
 
       # Install/update dependencies + create wsgi.py
       - name: Install dependencies & generate wsgi.py
-        uses: appleboy/ssh-action@v2
+        uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
@@ -119,7 +119,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Run database migration
-      uses: appleboy/ssh-action@v2
+      uses: appleboy/ssh-action@v1
       with:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USERNAME }}
