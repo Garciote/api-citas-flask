@@ -61,13 +61,12 @@ jobs:
           rsync -avz --delete \
           --exclude='.git*' \
           --exclude='tests/' \
-          --exclude='migrations/' \
           --exclude='.venv/' \
           --exclude='__pycache__/' \
           --exclude='.env' \
           --exclude='*.pyc' \
           --exclude='.github/' \
-          --exclude='flake.nix' \
+          --exclude='flake.*' \
           ./ \
             ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:${{ secrets.SSH_DEPLOY_PATH }}
 
@@ -79,10 +78,27 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd ${{ secrets.SSH_DEPLOY_PATH }}
+            DEPLOY_PATH="${{ secrets.SSH_DEPLOY_PATH }}"
 
-            # Activate venv and install/upgrade requirements
+            echo "Deploying in $DEPLOY_PATH"
+            mkdir -p "$DEPLOY_PATH"
+            cd "$DEPLOY_PATH"
+
+            # Create/Update .env
+            cat > .env << 'ENV'
+            ${{ secrets.PRODUCTION_ENV }}
+            ENV
+            chmod 600 .env
+
+            # 2. Create/Clean virtualenv
+            if [ -d "venv" ]; then
+              echo "Limpiando virtualenv existente..."
+              rm -rf venv
+            fi
+            python3 -m venv venv
             source venv/bin/activate
+
+            # Install dependencies.
             pip install --upgrade pip
             pip install -r requirements.txt
 
@@ -110,4 +126,38 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-              systemctl reload apache2 || true
+              sudo systemctl reload apache2 || true
+
+  migration:
+    needs: deploy
+    if: success()
+    runs-on: ubuntu-latest
+    steps:
+    - name: Run database migration (DROP everything + recreate collections + seed)
+      uses: appleboy/ssh-action@v1
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          cd ${{ secrets.SSH_DEPLOY_PATH }}
+
+          # Activate venv
+          source venv/bin/activate
+
+          # Force-drop and recreate the entire Clinica database
+          echo "Dropping existing Clinica database and running fresh migration..."
+          python3 -c "
+          import os
+          from pymongo import MongoClient
+          from dotenv import load_dotenv
+          load_dotenv()
+          client = MongoClient(os.getenv('MONGODB_URI'))
+          client.drop_database('Clinica')
+          print('Clinica database dropped')
+          "
+
+          # Run migrations
+          python3 migrations/001_init_clinica.py
+
+          echo "Migration completed fresh database ready"
