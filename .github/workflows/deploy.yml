@@ -89,6 +89,8 @@ jobs:
             ${{ secrets.PRODUCTION_ENV }}
             ENV
             chmod 600 .env
+            chmod 640 .env
+            sudo chgrp www-data .env || sudo chgrp apache .env || echo "Group changed .env skipped (OK on some systems)"
 
             # 2. Create/Clean virtualenv
             if [ -d "venv" ]; then
