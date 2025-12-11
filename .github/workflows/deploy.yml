@@ -24,6 +24,16 @@ jobs:
           pip install -r requirements.txt
           pip install pytest mongomock python-dotenv
 
+      - name: Run tests with mongomock
+        env:
+          JWT_SECRET_KEY: super-secret-test-key-12345
+          MONGODB_URI: mongodb://mock
+        run: |
+          pytest -v tests/test_api.py
+          echo "Tests passed!"
+
+      # Github Action Runner over
+
       # === SSH & Deploy ===
       # https://github.com/shimataro/ssh-key-action
       - name: Install SSH key
@@ -51,14 +61,7 @@ jobs:
                           
               chmod 600 .env
               echo ".env creado/actualizado en el servidor"
-
-      - name: Run tests with mongomock
-        env:
-          JWT_SECRET_KEY: super-secret-test-key-12345
-        run: |
-          pytest -v tests/test_api.py
-          echo "Tests passed!"
-
+              
       - name: Add server to known_hosts
         run: |
           ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
