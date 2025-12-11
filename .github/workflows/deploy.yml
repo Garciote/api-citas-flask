@@ -6,7 +6,7 @@ on:
     branches: [ main ]
 
 jobs:
-  test-and-deploy:
+  test:
     runs-on: ubuntu-latest
 
     steps:
@@ -34,8 +34,12 @@ jobs:
           MONGODB_URI: mongodb://mock
         run: |
           pytest -v tests/test_api.py
-          echo "Tests passed!"
 
+  deploy:
+    needs: test
+    if: success()
+    runs-on: ubuntu-latest
+    steps:
       # Github Action Runner over
 
       # === SSH & Deploy ===
@@ -49,7 +53,7 @@ jobs:
 
       # === SSH Action ===
       # https://github.com/appleboy/ssh-action
-      - name: Create/Update .env deployed
+      - name: Create/Update deploy directory, .env and virtual environment
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -57,6 +61,8 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           #port: 22 # Already Default
           script: |
+              "mkdir -p ${{ secrets.SSH_DEPLOY_PATH }} && chmod 755 ${{ secrets.SSH_DEPLOY_PATH }}"
+
               cd ${{ secrets.SSH_DEPLOY_PATH }}
               
               cat > .env <<'ENV'
@@ -64,42 +70,21 @@ jobs:
               ENV
                           
               chmod 600 .env
-              echo ".env creado/actualizado en el servidor"
+              
+              if [ ! -d "venv" ]; then
+                echo "Creating virtual environment..."
+                python3 -m venv venv
+              fi
               
       - name: Add server to known_hosts
         run: |
           ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
-
-      - name: Create remote deploy directory if it doesn't exist
-        run: |
-          ssh ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} \
-            "mkdir -p ${{ secrets.SSH_DEPLOY_PATH }} && chmod 755 ${{ secrets.SSH_DEPLOY_PATH }}"
 
       - name: Deploy with rsync over SSH
         run: |
           rsync -avz --delete \
             dist/ \
             ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:${{ secrets.SSH_DEPLOY_PATH }}
-
-      # === SSH Action ===
-      # https://github.com/appleboy/ssh-action
-      - name: Create venv.
-        uses: appleboy/ssh-action@v1.2.4
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          #port: 22 # Already Default
-          script: |
-              cd ${{ secrets.SSH_DEPLOY_PATH }}
-              
-              if [ ! -d "venv" ]; then
-                echo "Creating virtual environment..."
-                python3 -m venv venv
-              fi
-                          
-              echo "venv created."
-
 
       - name: Create/Update wsgi.py
         run: |
@@ -122,9 +107,10 @@ jobs:
           EOF
 
       - name: Reload Apache
-        run: |
-          ssh ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} << 'EOF'
-            echo "Reloading Apache..."
-            systemctl reload apache2 || true
-            echo "Deploy completed!"
-          EOF
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+              systemctl reload apache2 || true
