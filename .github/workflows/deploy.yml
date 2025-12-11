@@ -71,7 +71,7 @@ jobs:
             ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:${{ secrets.SSH_DEPLOY_PATH }}
 
       # Install/update dependencies + create wsgi.py
-      - name: Install dependencies & generate wsgi.py
+      - name: Install dependencies, .env and generate wsgi.py
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -85,12 +85,33 @@ jobs:
             cd "$DEPLOY_PATH"
 
             # Create/Update .env
-            cat > .env << 'ENV'
-            ${{ secrets.PRODUCTION_ENV }}
-            ENV
             chmod 600 .env
             chmod 640 .env
-            sudo chgrp www-data .env || sudo chgrp apache .env || echo "Group changed .env skipped (OK on some systems)"
+              
+            # Detect web server group dynamically
+            WEB_GROUP=$(grep '^Group' /etc/httpd/conf/httpd.conf 2>/dev/null | awk '{print $2}' || grep 'APACHE_RUN_GROUP' /etc/apache2/envvars 2>/dev/null | cut -d= -f2 || echo "www-data")
+            if [ -z "$WEB_GROUP" ]; then
+              WEB_GROUP="apache"  # Fallback if detection fails
+            fi
+              
+            sudo chgrp "$WEB_GROUP" .env || echo "Group change to $WEB_GROUP failed—check if group exists"
+              
+            # Verify immediately
+            echo "Current .env details:"
+            ls -l .env
+            stat -c "Mode: %a  Owner: %U  Group: %G" .env
+              
+            WEB_USER=$(grep '^User' /etc/httpd/conf/httpd.conf 2>/dev/null | awk '{print $2}' || grep 'APACHE_RUN_USER' /etc/apache2/envvars 2>/dev/null | cut -d= -f2 || echo "www-data")
+            if [ -z "$WEB_USER" ]; then
+              WEB_USER="apache"  # Fallback
+            fi
+              
+            if sudo -u "$WEB_USER" cat .env >/dev/null 2>&1; then
+              echo "SUCCESS: $WEB_USER can read .env"
+            else
+              echo "FAILED: $WEB_USER cannot read .env—debug group/user"
+              exit 1  # Fail the workflow to alert you
+            fi
 
             # 2. Create/Clean virtualenv
             if [ -d "venv" ]; then
