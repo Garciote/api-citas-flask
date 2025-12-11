@@ -1,4 +1,5 @@
 # wsgi.py
+#!/usr/bin/env python3
 import os
 import sys
 
@@ -28,3 +29,4 @@ if not os.getenv("JWT_SECRET_KEY"):
 
 # Set Apache's application to our app
 application = _app
+application.run()
