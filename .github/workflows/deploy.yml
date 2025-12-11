@@ -103,21 +103,17 @@ jobs:
             pip install -r requirements.txt
 
             # Generate wsgi.py
-            cat > wsgi.py << 'PY'
-            import sys
-            import os
-            sys.path.insert(0, "${{ secrets.SSH_DEPLOY_PATH }}")
+            cat > wsgi.py << 'WSGI'
+            #!/usr/bin/env python3
+            import sys, os
+            sys.path.insert(0, os.path.dirname(__file__))
 
             from dotenv import load_dotenv
             load_dotenv()
 
             from application import app as application
-
-            if application.config.get('DEBUG', False):
-                print("Running in debug mode!")
-            PY
-
-            echo "wsgi.py updated & dependencies installed"
+            WSGI
+            chmod 644 wsgi.py
 
       - name: Reload Apache
         uses: appleboy/ssh-action@master
