@@ -13,20 +13,20 @@ os.environ.setdefault("JWT_SECRET_KEY", "")
 
 # Load .env variables.
 from dotenv import load_dotenv
-load_dotenv()
+load_dotenv(override=True)
 
 # From application(.py) import app (as _app)
 from application import app as _app
 
-# Validación de seguridad
+missing = []
 if not os.getenv("MONGODB_URI"):
-    print("ERROR: MONGODB_URI is not set")
-    sys.exit(1)
-
+    missing.append("MONGODB_URI")
 if not os.getenv("JWT_SECRET_KEY"):
-    print("ERROR: JWT_SECRET_KEY is not set")
-    sys.exit(1)
+    missing.append("JWT_SECRET_KEY")
+
+if missing:
+    # This will appear in Apache error log and cause 500 → you’ll know instantly
+    raise RuntimeError(f"Missing required environment variables: {', '.join(missing)}")
 
 # Set Apache's application to our app
 application = _app
-application.run()

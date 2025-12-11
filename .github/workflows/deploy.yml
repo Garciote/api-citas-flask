@@ -72,7 +72,7 @@ jobs:
 
       # Install/update dependencies + create wsgi.py
       - name: Install dependencies & generate wsgi.py
-        uses: appleboy/ssh-action@v1
+        uses: appleboy/ssh-action@v2
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
@@ -118,8 +118,8 @@ jobs:
     if: success()
     runs-on: ubuntu-latest
     steps:
-    - name: Run database migration (DROP everything + recreate collections + seed)
-      uses: appleboy/ssh-action@v1
+    - name: Run database migration
+      uses: appleboy/ssh-action@v2
       with:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USERNAME }}
