@@ -77,7 +77,7 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          password: ${{ secrets.SSH_USERPASS }}
+          #password: ${{ secrets.SSH_USERPASS }}
           script: |
             DEPLOY_PATH="${{ secrets.SSH_DEPLOY_PATH }}"
 
@@ -89,34 +89,8 @@ jobs:
             cat > .env << 'ENV'
                 ${{ secrets.PRODUCTION_ENV }}
             ENV
-
-            chmod 600 .env
-            chmod 640 .env
-              
-            # Detect web server group dynamically
-            WEB_GROUP=$(grep '^Group' /etc/httpd/conf/httpd.conf 2>/dev/null | awk '{print $2}' || grep 'APACHE_RUN_GROUP' /etc/apache2/envvars 2>/dev/null | cut -d= -f2 || echo "www-data")
-            if [ -z "$WEB_GROUP" ]; then
-              WEB_GROUP="apache"  # Fallback if detection fails
-            fi
-              
-            sudo chgrp "$WEB_GROUP" .env || echo "Group change to $WEB_GROUP failed—check if group exists"
-              
-            # Verify immediately
-            echo "Current .env details:"
-            ls -l .env
-            stat -c "Mode: %a  Owner: %U  Group: %G" .env
-              
-            WEB_USER=$(grep '^User' /etc/httpd/conf/httpd.conf 2>/dev/null | awk '{print $2}' || grep 'APACHE_RUN_USER' /etc/apache2/envvars 2>/dev/null | cut -d= -f2 || echo "www-data")
-            if [ -z "$WEB_USER" ]; then
-              WEB_USER="apache"  # Fallback
-            fi
-              
-            if sudo -u "$WEB_USER" cat .env >/dev/null 2>&1; then
-              echo "SUCCESS: $WEB_USER can read .env"
-            else
-              echo "FAILED: $WEB_USER cannot read .env—debug group/user"
-              exit 1  # Fail the workflow to alert you
-            fi
+            
+            chmod 644 .env
 
             # 2. Create/Clean virtualenv
             if [ -d "venv" ]; then
