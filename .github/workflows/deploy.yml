@@ -33,18 +33,24 @@ jobs:
           known_hosts: ${{ secrets.SSH_HOST }}
           if_key_exists: replace
 
+      # === SSH Action ===
+      # https://github.com/appleboy/ssh-action
       - name: Create/Update .env deployed
-        run: |
-          ssh ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} << 'EOF'
-            cd ${{ secrets.SSH_DEPLOY_PATH }}
-            
-            cat > .env <<'ENV'
-            ${{ secrets.PRODUCTION_ENV }}
-            ENV
-                        
-            chmod 600 .env
-            echo ".env creado/actualizado en el servidor"
-          EOF
+        uses: appleboy/ssh-action@v1.2.4
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          #port: 22 # Already Default
+          script: |
+              cd ${{ secrets.SSH_DEPLOY_PATH }}
+              
+              cat > .env <<'ENV'
+              ${{ secrets.PRODUCTION_ENV }}
+              ENV
+                          
+              chmod 600 .env
+              echo ".env creado/actualizado en el servidor"
 
       - name: Run tests with mongomock
         env:
