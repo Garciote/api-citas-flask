@@ -40,7 +40,8 @@ jobs:
     if: success()
     runs-on: ubuntu-latest
     steps:
-      # Github Action Runner over
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       # === SSH & Deploy ===
       # https://github.com/shimataro/ssh-key-action
