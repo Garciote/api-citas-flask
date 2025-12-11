@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import pytest
 import mongomock
+from application import app
 from migrations._001_init_clinica import main as run_migration
 
 
@@ -27,12 +28,8 @@ def mock_mongo(monkeypatch):
     # Also patch pymongo.MongoClient to point to the mock client.
     monkeypatch.setattr("pymongo.MongoClient", lambda *args, **kwargs: mock_client)
 
-    # And finally patch the env variables.
-    monkeypatch.setenv("MONGODB_URI", "mongodb://mock")
-    monkeypatch.setenv("JWT_SECRET_KEY", "test-secret")
-
-    # Path the global myclient made in application.py
     import application
+    # Path the global myclient made in application.py
     monkeypatch.setattr(application, "myclient", mock_client)
 
     # Patch the ping test done in application
