@@ -74,26 +74,25 @@ jobs:
             dist/ \
             ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:${{ secrets.SSH_DEPLOY_PATH }}
 
-      - name: Create virtual environment if missing
-        run: |
-          ssh ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} << 'EOF'
-            cd ${{ secrets.SSH_DEPLOY_PATH }}
-            if [ ! -d "venv" ]; then
-              echo "Creating virtual environment..."
-              python3 -m venv venv
-            fi
-            echo "Virtual environment ready"
-          EOF
+      # === SSH Action ===
+      # https://github.com/appleboy/ssh-action
+      - name: Create venv.
+        uses: appleboy/ssh-action@v1.2.4
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          #port: 22 # Already Default
+          script: |
+              cd ${{ secrets.SSH_DEPLOY_PATH }}
+              
+              if [ ! -d "venv" ]; then
+                echo "Creating virtual environment..."
+                python3 -m venv venv
+              fi
+                          
+              echo "venv created."
 
-      - name: Install/Update Python dependencies on server
-        run: |
-          ssh ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} << 'EOF'
-            cd ${{ secrets.SSH_DEPLOY_PATH }}
-            source venv/bin/activate
-            pip install --upgrade pip
-            pip install -r requirements.txt python-dotenv
-            echo "Dependencies installed"
-          EOF
 
       - name: Create/Update wsgi.py
         run: |
