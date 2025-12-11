@@ -143,6 +143,6 @@ jobs:
           "
 
           # Run migrations
-          python3 migrations/001_init_clinica.py
+          python3 migrations/_001_init_clinica.py
 
           echo "Migration completed fresh database ready"
