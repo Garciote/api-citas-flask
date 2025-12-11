@@ -51,31 +51,6 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           known_hosts: ${{ secrets.SSH_HOST }}
           if_key_exists: replace
-
-      # === SSH Action ===
-      # https://github.com/appleboy/ssh-action
-      - name: Create/Update deploy directory, .env and virtual environment
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          #port: 22 # Already Default
-          script: |
-              "mkdir -p ${{ secrets.SSH_DEPLOY_PATH }} && chmod 755 ${{ secrets.SSH_DEPLOY_PATH }}"
-
-              cd ${{ secrets.SSH_DEPLOY_PATH }}
-              
-              cat > .env <<'ENV'
-              ${{ secrets.PRODUCTION_ENV }}
-              ENV
-                          
-              chmod 600 .env
-              
-              if [ ! -d "venv" ]; then
-                echo "Creating virtual environment..."
-                python3 -m venv venv
-              fi
               
       - name: Add server to known_hosts
         run: |
@@ -84,28 +59,49 @@ jobs:
       - name: Deploy with rsync over SSH
         run: |
           rsync -avz --delete \
-            dist/ \
+          --exclude='.git*' \
+          --exclude='tests/' \
+          --exclude='migrations/' \
+          --exclude='.venv/' \
+          --exclude='__pycache__/' \
+          --exclude='.env' \
+          --exclude='*.pyc' \
+          --exclude='.github/' \
+          --exclude='flake.nix' \
+          ./ \
             ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:${{ secrets.SSH_DEPLOY_PATH }}
 
-      - name: Create/Update wsgi.py
-        run: |
-          ssh ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} << 'EOF'
+      # Install/update dependencies + create wsgi.py
+      - name: Install dependencies & generate wsgi.py
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
             cd ${{ secrets.SSH_DEPLOY_PATH }}
-            cat > wsgi.py <<'PY'
+
+            # Activate venv and install/upgrade requirements
+            source venv/bin/activate
+            pip install --upgrade pip
+            pip install -r requirements.txt
+
+            # Generate wsgi.py
+            cat > wsgi.py << 'PY'
             import sys
             import os
             sys.path.insert(0, "${{ secrets.SSH_DEPLOY_PATH }}")
 
             from dotenv import load_dotenv
-            load_dotenv()  # Load .env if it exists
+            load_dotenv()
 
             from application import app as application
 
             if application.config.get('DEBUG', False):
                 print("Running in debug mode!")
             PY
-            echo "wsgi.py created/updated"
-          EOF
+
+            echo "wsgi.py updated & dependencies installed"
 
       - name: Reload Apache
         uses: appleboy/ssh-action@master
