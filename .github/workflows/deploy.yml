@@ -24,6 +24,15 @@ jobs:
           pip install -r requirements.txt
           pip install pytest mongomock python-dotenv
 
+      # === SSH & Deploy ===
+      # https://github.com/shimataro/ssh-key-action
+      - name: Install SSH key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          known_hosts: ${{ secrets.SSH_HOST }}
+          if_key_exists: replace
+
       - name: Create/Update .env deployed
         run: |
           ssh ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} << 'EOF'
@@ -43,15 +52,6 @@ jobs:
         run: |
           pytest -v tests/test_api.py
           echo "Tests passed!"
-
-      # === SSH & Deploy ===
-      # https://github.com/shimataro/ssh-key-action
-      - name: Install SSH key
-        uses: shimataro/ssh-key-action@v2
-        with:
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          known_hosts: ${{ secrets.SSH_HOST }}
-          if_key_exists: replace
 
       - name: Add server to known_hosts
         run: |
