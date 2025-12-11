@@ -85,6 +85,10 @@ jobs:
             cd "$DEPLOY_PATH"
 
             # Create/Update .env
+            cat > .env << 'ENV'
+                ${{ secrets.PRODUCTION_ENV }}
+            ENV
+
             chmod 600 .env
             chmod 640 .env
               
