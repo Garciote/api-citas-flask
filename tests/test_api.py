@@ -33,9 +33,9 @@ def mock_mongo(monkeypatch):
     monkeypatch.setattr(application, "myclient", mock_client)
 
     # Patch the ping test done in application
-    def fake_ping(*args, **kwargs):
-        return {"ok": 1.0}
-    monkeypatch.setattr(mock_client.admin, "command", fake_ping)
+    # def fake_ping(*args, **kwargs):
+    #    return {"ok": 1.0}
+    # monkeypatch.setattr(mock_client.admin, "command", fake_ping)
 
     # Then just do the migration
     from migrations._001_init_clinica import main as run_migration

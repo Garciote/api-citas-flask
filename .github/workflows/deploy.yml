@@ -33,7 +33,7 @@ jobs:
           JWT_SECRET_KEY: super-secret-test-key-12345
           MONGODB_URI: mongodb://mock
         run: |
-          pytest -vv tests/test_api.py
+          pytest -v tests/test_api.py
           echo "Tests passed!"
 
       # Github Action Runner over
