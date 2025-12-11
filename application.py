@@ -32,8 +32,10 @@ CORS(app)
 #   - etc.
 
 MONGODB_URI = os.getenv("MONGODB_URI")
-if not MONGODB_URI:
-    raise RuntimeError("MONGODB_URI is not set! Create a .env file or configure it in your environment.")
+#if not MONGODB_URI:
+#    raise RuntimeError("Error: Environment variable 'MONGODB_URI' is not set.\n"
+#        "   - Create a '.env' file with 'MONGODB_URI=...'\n"
+#        "   - Or configure it in Github Secrets / Server")
 
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 if not JWT_SECRET_KEY:

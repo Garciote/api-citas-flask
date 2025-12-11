@@ -26,6 +26,10 @@ jobs:
 
       - name: Run tests with mongomock
         env:
+          # These env variables will be added to the Action Runner.
+          # Does not run on the target host / server.
+          # Because it does not run on the target host / server, it will not have access to our .env file
+          # Thus why these are needed here.
           JWT_SECRET_KEY: super-secret-test-key-12345
           MONGODB_URI: mongodb://mock
         run: |
