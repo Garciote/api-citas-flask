@@ -25,7 +25,6 @@ if not os.getenv("JWT_SECRET_KEY"):
     missing.append("JWT_SECRET_KEY")
 
 if missing:
-    # This will appear in Apache error log and cause 500 → you’ll know instantly
     raise RuntimeError(f"Missing required environment variables: {', '.join(missing)}")
 
 # Set Apache's application to our app
