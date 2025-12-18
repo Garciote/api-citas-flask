@@ -192,7 +192,7 @@ def register():
     }
     x = mycol.insert_one(user)
 
-    return jsonify({"msg": "user created"}), 201
+    return jsonify({"msg": "user created"}), 200
 
 
 @app.route("/centers", methods=['GET'])
